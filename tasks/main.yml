@@ -1,0 +1,43 @@
+---
+- name: "RouterOS: Add or set {{ ros_path }}"
+  routeros_command:
+    commands:
+      - >
+        :local existing [
+          /{{ ros_path }} find where
+              {% for item in ros_match_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %}
+        ];
+        :if ($existing = "") do={
+          {% if not ansible_check_mode %}
+            /{{ ros_path }} add
+              {% for item in ros_match_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %}
+              {% for item in ros_set_attrs | default({}) | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %};
+          {% endif %}
+          :put "added"
+        }
+        {% if ros_set_attrs is defined %}
+        else={
+          :if ([
+            /{{ ros_path }} find where .id=$existing
+              {% for item in ros_set_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %}
+          ] = "") do={
+            {% if not ansible_check_mode %}
+              /{{ ros_path }} set $existing
+                {% for item in ros_set_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %};
+            {% endif %}
+            :put "changed"
+          }
+        }
+        {% endif %}
+  vars:
+  register: ros
+  failed_when:
+  - >
+    (ros.stdout_lines | default([[]]))[0]
+          | reject('search', '^[</:]|^$| already | with such name exists$|^changed$|^added$')
+          | join('\n')
+          | list
+          | length > 0
+  - not (routeros_ignore_errors | default(False))
+  changed_when:
+  - '"stdout_lines" in ros and ("changed" in ros.stdout_lines[0] or "added" in ros.stdout_lines[0])'

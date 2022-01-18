@@ -1,0 +1,82 @@
+Ansible role for RouterOS
+=========================
+
+This role enables easy configuration of Mikrotik RouterOS.
+
+The Problem
+-----------
+
+Assume you want to have the following config on your Mikrotik device:
+
+    /ip address add interface=ether1 address=192.168.1.1/24
+
+That's easy to put into [community.routeros.command]. But you won't know if the
+command changed anything.
+
+Assume further that you want to change the address from its previous value
+`192.168.0.1/24`. You could insert another line, removing the old address:
+
+    /ip address rem [find where interface=ether1 address=192.168.0.1/24]
+
+But what if you don't know the previous value or don't care and simply want to
+change the address on interface ether1? You might be tempted to use this then:
+
+    /ip address rem [find where interface=ether1]
+
+But oh no, now you're removing the correct address 192.168.1.1/24 as well!
+
+Also, how do you know whether it was successful?
+
+[community.routeros.command]: https://ansible.fontein.de/collections/community/routeros/command_module.html
+
+The Solution
+------------
+
+To achieve the above, you can simply include this role like so:
+
+    - name: Configure IP address on ether1
+      include_role:
+        name: routeros
+      vars:
+        ros_path: ip address
+        ros_match_attrs:
+          interface: ether1
+        ros_set_attrs:
+          address: 192.168.1.1/24
+
+The role translates this invocation to a [RouterOS script] that does the
+following:
+
+* In `/ip address`, look for an item with `interface=ether1`.
+  * If you find it, check if it has `address=192.168.1.1/24`
+    * If it has, be done and report no changes.
+    * If it doesn't, set its `address=192.168.1.1/24` and report changed state
+  * If you don't find it, add one with `interface=ether1 address=192.168.1.1/24`
+    and report changed state
+* If there is any unexpected output from RouterOS, report failed state (unless
+  `routeros_ignore_errors` is set).
+
+By doing this on the router itself, we save ourselves from several roundtrips
+between Ansible and the device.
+
+[RouterOS script]: https://help.mikrotik.com/docs/display/ROS/Scripting
+
+Troubleshooting
+---------------
+
+With `-vvv` you can see the generated script that is being sent to the device,
+as well as its output.
+
+You should definitely be using [`+512cet`][terminal width hack] at the end of
+you username. Still, you might experience situations where the generated script
+simply is too long and will cause heaps of "fake" output lines in `-vvv`. That
+shouldn't be a problem per se, but makes debugging harder.
+
+[terminal width hack]: https://github.com/ansible-collections/community.routeros/issues/6#issuecomment-720357994
+
+Also, there are situations where the change detection is very fragile. For
+example, if setting a time somewhere, you can easily specify it as `10m` to mean
+10 minutes. But this will cause a change to be reported every time, because
+internally RouterOS converts this to `600`, and while it displays it as `10m`,
+it won't match during the search. Nothing is actually changed, but the script
+cannot detect that they are the same value.
