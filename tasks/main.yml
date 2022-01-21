@@ -12,6 +12,6 @@
           | join('\n')
           | list
           | length > 0
-  - not (routeros_ignore_errors | default(False))
+  ignore_errors: '{{ ros_ignore_errors | default(False) }}'
   changed_when:
   - '"stdout_lines" in ros and ("changed" in ros.stdout_lines[0] or "added" in ros.stdout_lines[0])'

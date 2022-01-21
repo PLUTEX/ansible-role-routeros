@@ -59,7 +59,7 @@ following:
   * If you don't find it, add one with `interface=ether1 address=192.168.1.1/24`
     and report changed state (note that `dynamic=no` is not set!)
 * If there is any unexpected output from RouterOS, report failed state (unless
-  `routeros_ignore_errors` is set).
+  `ros_ignore_errors` is set).
 
 By doing this on the router itself, we save ourselves from several roundtrips
 between Ansible and the device.
