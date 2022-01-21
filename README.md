@@ -66,6 +66,38 @@ between Ansible and the device.
 
 [RouterOS script]: https://help.mikrotik.com/docs/display/ROS/Scripting
 
+Object placement
+----------------
+
+For ordered objects, you can specify `ros_place_before` to define where the
+object will be added if it doesn't exist yet:
+
+```yaml
+- name: Allow incoming DHCP traffic
+  include_role:
+    name: routeros
+  vars:
+    ros_path: ip firewall filter
+    ros_match_attr:
+      chain: input
+      protocol: udp
+      dst-port: 67
+    ros_set_attr:
+      action: accept
+    ros_place_before: '[find chain=input action=reject]'
+```
+
+You can use RouterOS scripting to find the object to place before dynamically,
+or specify an internal id like `*a` that you obtained some other way. Note
+however that the scripting expression must return, otherwise the task will fail!
+To insert the rule as first object, you can try this:
+
+```
+    ros_place_before: '([find]->0)'
+```
+
+Note that this doesn't have any influence if the object already exists!
+
 Troubleshooting
 ---------------
 

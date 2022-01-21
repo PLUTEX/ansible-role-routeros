@@ -24,6 +24,7 @@
 :if ([:len $existing] = 0) do={
   {%- if not ansible_check_mode -%}
     /{{ ros_path }} add
+      {%- if ros_place_before is defined %} place-before={{ ros_place_before }}{% endif %}
       {%- for item in ros_match_attrs | dict2items %}{% if item.value.set | default != False %} {{ render_kv(item, matching=False) }}{% endif %}{% endfor %}
       {%- for item in ros_set_attrs | default({}) | dict2items %} {{ render_kv(item, matching=False) }}{% endfor %};
   {%- endif -%}
