@@ -34,18 +34,20 @@ The Solution
 
 To achieve the above, you can simply include this role like so:
 
-    - name: Configure IP address on ether1
-      include_role:
-        name: routeros
-      vars:
-        ros_path: ip address
-        ros_match_attrs:
-          interface: ether1
-          dynamic:
-            set: no
-            value: "no"
-        ros_set_attrs:
-          address: 192.168.1.1/24
+```yaml
+- name: Configure IP address on ether1
+  include_role:
+    name: routeros
+  vars:
+    ros_path: ip address
+    ros_match_attrs:
+      interface: ether1
+      dynamic:
+        set: no
+        value: "no"
+    ros_set_attrs:
+      address: 192.168.1.1/24
+```
 
 The role translates this invocation to a [RouterOS script] that does the
 following:
