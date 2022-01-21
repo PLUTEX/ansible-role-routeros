@@ -3,9 +3,13 @@
   routeros_command:
     commands:
       - >
-        {% macro render_kv(item) -%}
-          {%- if item.value in ("yes", "no") or item.value is match("^\d+$") -%}
+        {% macro render_kv(item, matching=True) -%}
+          {%- if item.value is match("^\d+$") or (item.value in ("yes", True, "no", False) and not matching) -%}
             {{ item.key }}={{ item.value }}
+          {%- elif item.value in ("yes", True) -%}
+            {{ item.key }}
+          {%- elif item.value in ("no", False) -%}
+            !{{ item.key }}
           {%- else -%}
             {{ item.key }}="{{ item.value | replace('"', '\"') }}"
           {%- endif -%}
@@ -17,8 +21,8 @@
         :if ($existing = "") do={
           {%- if not ansible_check_mode -%}
             /{{ ros_path }} add
-              {%- for item in ros_match_attrs | dict2items %} {{ render_kv(item) }}{% endfor %}
-              {%- for item in ros_set_attrs | default({}) | dict2items %} {{ render_kv(item) }}{% endfor %};
+              {%- for item in ros_match_attrs | dict2items %} {{ render_kv(item, matching=False) }}{% endfor %}
+              {%- for item in ros_set_attrs | default({}) | dict2items %} {{ render_kv(item, matching=False) }}{% endfor %};
           {%- endif -%}
           :put "added"
         }
@@ -32,7 +36,7 @@
           ] = "") do={
             {%- if not ansible_check_mode -%}
               /{{ ros_path }} set $existing
-                {%- for item in ros_set_attrs | dict2items %} {{ render_kv(item) }}{% endfor %};
+                {%- for item in ros_set_attrs | dict2items %} {{ render_kv(item, matching=False) }}{% endfor %};
             {%- endif -%}
             :put "changed"
           }
