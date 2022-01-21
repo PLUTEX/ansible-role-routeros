@@ -2,47 +2,7 @@
 - name: "RouterOS: Add or set {{ ros_path }}"
   routeros_command:
     commands:
-      - >
-        {% macro render_kv(item, matching=True) -%}
-          {%- set value = item.value.value | default(item.value) -%}
-          {%- if value is match("^\d+$") or (value in ("yes", True, "no", False) and not matching) -%}
-            {{ item.key }}={{ value }}
-          {%- elif value in ("yes", True) -%}
-            {{ item.key }}
-          {%- elif value in ("no", False) -%}
-            !{{ item.key }}
-          {%- else -%}
-            {{ item.key }}="{{ value | replace('"', '\"') }}"
-          {%- endif -%}
-        {%- endmacro -%}
-        :local existing [
-          /{{ ros_path }} find where
-              {%- for item in ros_match_attrs | dict2items %} {{ render_kv(item) }}{% endfor %}
-        ];
-        :if ($existing = "") do={
-          {%- if not ansible_check_mode -%}
-            /{{ ros_path }} add
-              {%- for item in ros_match_attrs | dict2items %}{% if item.value.set | default != False %} {{ render_kv(item, matching=False) }}{% endif %}{% endfor %}
-              {%- for item in ros_set_attrs | default({}) | dict2items %} {{ render_kv(item, matching=False) }}{% endfor %};
-          {%- endif -%}
-          :put "added"
-        }
-        {%- if ros_set_attrs is defined %}
-        else={
-          :if ([
-            :foreach id in=$existing do={
-              /{{ ros_path }} find where .id=$id
-                {%- for item in ros_set_attrs | dict2items %} {{ render_kv(item) }}{% endfor -%}
-            }
-          ] = "") do={
-            {%- if not ansible_check_mode -%}
-              /{{ ros_path }} set $existing
-                {%- for item in ros_set_attrs | dict2items %} {{ render_kv(item, matching=False) }}{% endfor %};
-            {%- endif -%}
-            :put "changed"
-          }
-        }
-        {% endif %}
+      - '{{ lookup("template", "routeros.j2") }}'
   vars:
   register: ros
   failed_when:
