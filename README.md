@@ -70,7 +70,8 @@ Troubleshooting
 ---------------
 
 With `-vvv` you can see the generated script that is being sent to the device,
-as well as its output.
+as well as its output. In the output, you will be able to distinguish between
+the changed states "added" and "changed".
 
 You should definitely be using [`+512cet`][terminal width hack] at the end of
 you username. Still, you might experience situations where the generated script
@@ -85,3 +86,34 @@ example, if setting a time somewhere, you can easily specify it as `10m` to mean
 internally RouterOS converts this to `600`, and while it displays it as `10m`,
 it won't match during the search. Nothing is actually changed, but the script
 cannot detect that they are the same value.
+
+The same thing applies to arrays: They can be set using their comma-separated
+representation, but won't turn up on filtering on that. So the following will
+always report changes:
+
+```yaml
+- name: Add important script
+  include_role:
+    name: routeros
+  vars:
+    ros_path: system script
+    ros_match_attr:
+      name: test
+    ros_set_attr:
+      source: ':put "Hi!"'
+      policy: "read,write"
+```
+
+Instead, you need to write the policy as YaML list:
+
+```yaml
+      policy:
+      - read
+      - write
+```
+
+Note that RouterOS is horribly inconsistent with what is an array and what
+isn't. For example, `/routing filter set protocol=connect,static` is actually
+stored as a string (which means you need to use `"connect,static"` when
+filtering for it), whereas `routing filter set address-family=ip,ipv6` is stored
+as an array (which means you need to use `("ip","ipv6")` when filtering for it).

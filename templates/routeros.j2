@@ -1,6 +1,13 @@
 {% macro render_kv(item, matching=True) -%}
   {%- set value = item.value.value | default(item.value) -%}
-  {%- if value is match("^\d+$") or (value in ("yes", True, "no", False) and not matching) -%}
+  {%- if not value is string and value is iterable -%}
+    {%- set comma = joiner(",") -%}
+    {{ item.key }}=(
+      {%- for x in value -%}
+        {{ comma() }}"{{ x }}"
+      {%- endfor -%}
+    )
+  {%- elif value is match("^\d+$") or (value in ("yes", True, "no", False) and not matching) -%}
     {{ item.key }}={{ value }}
   {%- elif value in ("yes", True) -%}
     {{ item.key }}
