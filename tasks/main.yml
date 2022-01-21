@@ -3,28 +3,37 @@
   routeros_command:
     commands:
       - >
+        {% macro render_kv(item) -%}
+          {%- if item.value in ("yes", "no") or item.value is match("^\d+$") -%}
+            {{ item.key }}={{ item.value }}
+          {%- else -%}
+            {{ item.key }}="{{ item.value | replace('"', '\"') }}"
+          {%- endif -%}
+        {%- endmacro -%}
         :local existing [
           /{{ ros_path }} find where
-              {% for item in ros_match_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %}
+              {%- for item in ros_match_attrs | dict2items %} {{ render_kv(item) }}{% endfor %}
         ];
         :if ($existing = "") do={
-          {% if not ansible_check_mode %}
+          {%- if not ansible_check_mode -%}
             /{{ ros_path }} add
-              {% for item in ros_match_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %}
-              {% for item in ros_set_attrs | default({}) | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %};
-          {% endif %}
+              {%- for item in ros_match_attrs | dict2items %} {{ render_kv(item) }}{% endfor %}
+              {%- for item in ros_set_attrs | default({}) | dict2items %} {{ render_kv(item) }}{% endfor %};
+          {%- endif -%}
           :put "added"
         }
-        {% if ros_set_attrs is defined %}
+        {%- if ros_set_attrs is defined %}
         else={
           :if ([
-            /{{ ros_path }} find where .id=$existing
-              {% for item in ros_set_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %}
+            :foreach id in=$existing do={
+              /{{ ros_path }} find where .id=$id
+                {%- for item in ros_set_attrs | dict2items %} {{ render_kv(item) }}{% endfor -%}
+            }
           ] = "") do={
-            {% if not ansible_check_mode %}
+            {%- if not ansible_check_mode -%}
               /{{ ros_path }} set $existing
-                {% for item in ros_set_attrs | dict2items %} {{ item.key }}={% if item.value in ("yes", "no") or item.value is match("^\d+$") %}{{ item.value }}{% else %}"{{ item.value | replace('"', '\"') }}"{% endif %}{% endfor %};
-            {% endif %}
+                {%- for item in ros_set_attrs | dict2items %} {{ render_kv(item) }}{% endfor %};
+            {%- endif -%}
             :put "changed"
           }
         }
