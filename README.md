@@ -41,18 +41,21 @@ To achieve the above, you can simply include this role like so:
         ros_path: ip address
         ros_match_attrs:
           interface: ether1
+          dynamic:
+            set: no
+            value: "no"
         ros_set_attrs:
           address: 192.168.1.1/24
 
 The role translates this invocation to a [RouterOS script] that does the
 following:
 
-* In `/ip address`, look for an item with `interface=ether1`.
+* In `/ip address`, look for an item with `interface=ether1` and `dynamic=no`.
   * If you find it, check if it has `address=192.168.1.1/24`
     * If it has, be done and report no changes.
     * If it doesn't, set its `address=192.168.1.1/24` and report changed state
   * If you don't find it, add one with `interface=ether1 address=192.168.1.1/24`
-    and report changed state
+    and report changed state (note that `dynamic=no` is not set!)
 * If there is any unexpected output from RouterOS, report failed state (unless
   `routeros_ignore_errors` is set).
 
