@@ -7,7 +7,7 @@
         {{ comma() }}"{{ x }}"
       {%- endfor -%}
     )
-  {%- elif value is match("^\d+$") or (value in ("yes", True, "no", False) and not matching) -%}
+  {%- elif (value is match("^\d+$") or value in ("yes", True, "no", False)) and not matching -%}
     {{ item.key }}={{ value }}
   {%- elif value in ("yes", True) -%}
     {{ item.key }}
