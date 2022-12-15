@@ -1,6 +1,6 @@
 ---
 - name: "RouterOS: Add or set {{ ros_path }}"
-  routeros_command:
+  community.routeros.command:
     commands:
       - '{{ lookup("template", "routeros.j2") }}'
   vars:
