@@ -9,7 +9,7 @@
       {%- endfor -%}
     )
   {%- elif (value is match("^\d+$") or value in ("yes", True, "no", False)) and not matching -%}
-    {{ item.key }}={{ value }}
+    {{ item.key }}={{ value | string }}
   {%- elif value in ("yes", True) -%}
     {{ item.key }}
   {%- elif value in ("no", False) -%}
