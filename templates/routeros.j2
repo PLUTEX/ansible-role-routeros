@@ -10,9 +10,9 @@
     )
   {%- elif (value is match("^\d+$") or value in ("yes", True, "no", False)) and not matching -%}
     {{ item.key }}={{ value | string }}
-  {%- elif value in ("yes", True) -%}
+  {%- elif value in ("yes", True, "--present--") -%}
     {{ item.key }}
-  {%- elif value in ("no", False) -%}
+  {%- elif value in ("no", False, "--absent--") -%}
     !{{ item.key }}
   {%- else -%}
     {{ item.key }}="{{ value | replace('"', '\\"') }}"
